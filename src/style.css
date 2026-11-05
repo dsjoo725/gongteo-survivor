@@ -1,0 +1,125 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, sans-serif;
+  color: #f3f6f2;
+  background: #111a16;
+}
+
+* { box-sizing: border-box; }
+
+body { margin: 0; }
+
+.game-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 8px 0;
+}
+
+#arena {
+  position: relative;
+  width: min(100%, 540px, calc((100vh - 100px) * 0.5625));
+  width: min(100%, 540px, calc((100dvh - 100px) * 0.5625));
+  aspect-ratio: 9 / 16;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #263c31;
+  box-shadow: 0 0 0 1px #42564c, 0 12px 36px #080e0b80;
+}
+
+#game, #game canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.hud {
+  position: absolute;
+  inset: 10px 10px auto;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud div {
+  padding: 6px 10px;
+  border-radius: 7px;
+  background: #111a16e8;
+  color: #d9e4da;
+}
+
+.hud strong { margin-left: 3px; color: #fff; }
+
+.controls {
+  margin: 0;
+  padding-inline: 6px;
+  color: #cedbd1;
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.results {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  background: #101a16b8;
+}
+
+.results[hidden] { display: none; }
+
+.results-card {
+  width: min(100%, 260px);
+  padding: 22px 12px;
+  text-align: center;
+  border: 1px solid #587163;
+  border-radius: 14px;
+  background: #192921;
+}
+
+.results h1 { margin: 0; font-size: 1.45rem; }
+.results p { margin: 10px 0 17px; color: #d9e4da; }
+
+.results button {
+  min-height: 44px;
+  padding: 8px 18px;
+  border: 0;
+  border-radius: 7px;
+  font: inherit;
+  font-weight: 700;
+  color: #10231b;
+  background: #a7e5b1;
+  cursor: pointer;
+}
+
+.results button:focus-visible { outline: 2px solid white; outline-offset: 3px; }
+
+.player-stats {
+  width: min(calc(100% - 24px), 420px);
+  flex-shrink: 0;
+  border: 1px solid #42564c;
+  border-radius: 8px;
+  background: #192921;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.player-stats summary {
+  min-height: 44px;
+  padding: 12px;
+  cursor: pointer;
+}
+
+.player-stats summary:focus-visible { outline: 2px solid white; outline-offset: 3px; }
+.player-stats dl { margin: 0; padding: 0 12px 12px; }
+.player-stats dl div { display: flex; justify-content: space-between; gap: 8px; padding-block: 5px; }
+.player-stats dt { color: #cedbd1; }
+.player-stats dd { margin: 0; overflow-wrap: anywhere; min-width: 0; text-align: right; }

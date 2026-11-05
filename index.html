@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="방향키와 터치로 즐기는 2D 생존 슈팅 프로토타입" />
+    <title>공터 생존 테스트</title>
+  </head>
+  <body>
+    <main class="game-shell" aria-label="공터 생존 테스트">
+      <div id="arena">
+        <div id="game"></div>
+        <div class="hud">
+          <div>체력 <strong id="health">3 / 3</strong></div>
+          <div>처치 <strong id="kills">0</strong></div>
+        </div>
+        <div id="results" class="results" hidden>
+          <div class="results-card">
+            <h1>게임 오버</h1>
+            <p id="summary"></p>
+            <button id="restart" type="button">다시 시작</button>
+          </div>
+        </div>
+      </div>
+      <p class="controls">방향키 또는 터치 드래그로 이동 · 자동 사격</p>
+      <details class="player-stats">
+        <summary>플레이어 스탯</summary>
+        <dl>
+          <div><dt>공격력</dt><dd data-stat="attackDamage"></dd></div>
+          <div><dt>공격 속도</dt><dd data-stat="attackSpeed"></dd></div>
+          <div><dt>치명타 확률</dt><dd data-stat="critChance"></dd></div>
+          <div><dt>치명타 피해량</dt><dd data-stat="critMultiplier"></dd></div>
+          <div><dt>체력</dt><dd data-stat="maxHealth"></dd></div>
+          <div><dt>이동 속도</dt><dd data-stat="moveSpeed"></dd></div>
+          <div><dt>크기</dt><dd data-stat="size"></dd></div>
+          <div><dt>피해 흡혈</dt><dd data-stat="lifesteal"></dd></div>
+        </dl>
+      </details>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
