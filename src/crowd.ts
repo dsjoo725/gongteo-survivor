@@ -1,24 +1,25 @@
-import { COMBAT, constrainEnemyPosition, distanceSquared, type Point } from './rules';
+import { ARENA, COMBAT, constrainEnemyPosition, distanceSquared, type Point, type ArenaSize } from './rules';
 
-export interface CrowdBody extends Point { id: number }
+export interface CrowdBody extends Point { id: number; radius?: number }
 export interface CrowdResult { passes: number; maxPenetrationPx: number }
 
 const MAX_PASSES = 16;
 const STOP_PENETRATION_PX = 0.25;
 const RELAXATION = 1.5;
-const DIAMETER = COMBAT.enemyRadius * 2;
+const radiusOf = (body: CrowdBody): number => body.radius ?? COMBAT.enemyRadius;
 
-function project(body: CrowdBody, player: Point, playerRadius: number): void {
-  const position = constrainEnemyPosition(body, player, playerRadius);
+function project(body: CrowdBody, player: Point, playerRadius: number, arena: ArenaSize): void {
+  const position = constrainEnemyPosition(body, player, playerRadius, arena, radiusOf(body));
   body.x = position.x;
   body.y = position.y;
 }
 
-function separate(a: CrowdBody, b: CrowdBody, player: Point, playerRadius: number): void {
+function separate(a: CrowdBody, b: CrowdBody, player: Point, playerRadius: number, arena: ArenaSize): void {
   const dx = b.x - a.x;
   const dy = b.y - a.y;
   const squared = dx * dx + dy * dy;
-  if (squared >= DIAMETER ** 2) return;
+  const diameter = radiusOf(a) + radiusOf(b);
+  if (squared >= diameter ** 2) return;
   const distance = Math.sqrt(squared);
   let nx: number;
   let ny: number;
@@ -32,7 +33,7 @@ function separate(a: CrowdBody, b: CrowdBody, player: Point, playerRadius: numbe
     nx = dx / distance;
     ny = dy / distance;
   }
-  const correction = (DIAMETER - distance) * RELAXATION;
+  const correction = (diameter - distance) * RELAXATION;
   // Let the outer enemy absorb more pressure, toward available space instead of
   // repeatedly compressing the inner enemy against the player. Equal radii split.
   const radialA = distanceSquared(a, player);
@@ -45,8 +46,8 @@ function separate(a: CrowdBody, b: CrowdBody, player: Point, playerRadius: numbe
   a.y -= ny * correctionA;
   b.x += nx * correctionB;
   b.y += ny * correctionB;
-  project(a, player, playerRadius);
-  project(b, player, playerRadius);
+  project(a, player, playerRadius, arena);
+  project(b, player, playerRadius, arena);
   // A hard boundary can cancel one side of the correction. Transfer that lost
   // normal movement to the other body once, using the same pre-transfer result.
   const gainedA = Math.max(0, Math.min(correctionA, (oldAX - a.x) * nx + (oldAY - a.y) * ny));
@@ -56,12 +57,12 @@ function separate(a: CrowdBody, b: CrowdBody, player: Point, playerRadius: numbe
   if (lostA > 1e-9) {
     b.x += nx * lostA;
     b.y += ny * lostA;
-    project(b, player, playerRadius);
+    project(b, player, playerRadius, arena);
   }
   if (lostB > 1e-9) {
     a.x -= nx * lostB;
     a.y -= ny * lostB;
-    project(a, player, playerRadius);
+    project(a, player, playerRadius, arena);
   }
 }
 
@@ -69,25 +70,26 @@ function maxPenetration(enemies: CrowdBody[]): number {
   let max = 0;
   for (let a = 0; a < enemies.length; a++) for (let b = a + 1; b < enemies.length; b++) {
     const squared = distanceSquared(enemies[a], enemies[b]);
-    if (squared < DIAMETER ** 2) max = Math.max(max, DIAMETER - Math.sqrt(squared));
+    const diameter = radiusOf(enemies[a]) + radiusOf(enemies[b]);
+    if (squared < diameter ** 2) max = Math.max(max, diameter - Math.sqrt(squared));
   }
   return max;
 }
 
 // Mutates only this tick's position copies. Phaser sync and damage belong to the scene.
-export function solveCrowd(player: Point, enemies: CrowdBody[], playerRadius = COMBAT.playerRadius): CrowdResult {
+export function solveCrowd(player: Point, enemies: CrowdBody[], playerRadius = COMBAT.playerRadius, arena: ArenaSize = ARENA): CrowdResult {
   enemies.sort((a, b) => a.id - b.id);
-  for (const enemy of enemies) project(enemy, player, playerRadius);
+  for (const enemy of enemies) project(enemy, player, playerRadius, arena);
   let residual = maxPenetration(enemies);
   let passes = 0;
   while (passes < MAX_PASSES && residual > STOP_PENETRATION_PX) {
     if (passes % 2 === 0) {
       for (let a = 0; a < enemies.length - 1; a++) for (let b = a + 1; b < enemies.length; b++) {
-        separate(enemies[a], enemies[b], player, playerRadius);
+        separate(enemies[a], enemies[b], player, playerRadius, arena);
       }
     } else {
       for (let a = enemies.length - 2; a >= 0; a--) for (let b = enemies.length - 1; b > a; b--) {
-        separate(enemies[a], enemies[b], player, playerRadius);
+        separate(enemies[a], enemies[b], player, playerRadius, arena);
       }
     }
     passes++;

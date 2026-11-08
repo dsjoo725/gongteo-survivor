@@ -2,40 +2,88 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#244b53" />
+    <link rel="preload" as="image" href="/art/moonlight/upgrade-shards.png" />
+    <link rel="preload" as="image" href="/art/moonlight/upgrade-shards-extra.png" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23263c31'/%3E%3Ccircle cx='12' cy='12' r='6' fill='%2373d5ff'/%3E%3C/svg%3E" />
     <meta name="description" content="방향키와 터치로 즐기는 2D 생존 슈팅 프로토타입" />
-    <title>공터 생존 테스트</title>
+    <title>공터서바이버</title>
   </head>
   <body>
-    <main class="game-shell" aria-label="공터 생존 테스트">
+    <main class="game-shell" aria-label="공터서바이버">
       <div id="arena">
+        <section id="title-screen" class="title-screen" aria-labelledby="title-name">
+          <div class="title-copy"><p>익숙한데, 조금 다른 꿈.</p><h1 id="title-name">공터<br>서바이버<span>.</span></h1></div>
+          <div class="title-actions"><button id="title-start" class="primary wide" type="button" disabled>꿈으로 들어가기 <span aria-hidden="true">↗</span></button><button id="title-settings" class="title-settings" type="button" disabled>환경설정</button><p id="art-status" role="status">공터를 준비하고 있어요.</p><button id="art-retry" class="secondary" type="button" hidden>다시 시도</button></div>
+        </section>
         <div id="game"></div>
-        <div class="hud">
-          <div>체력 <strong id="health">3 / 3</strong></div>
-          <div>처치 <strong id="kills">0</strong></div>
+        <div class="hud-health" id="health-panel">
+          <div class="health-copy visually-hidden"><span>체력</span><strong id="health">3 / 3</strong></div>
+          <div id="health-meter" class="health-track" role="meter" aria-label="남은 체력" aria-valuemin="0" aria-valuemax="3" aria-valuenow="3"><i id="health-fill"></i></div>
         </div>
-        <div id="results" class="results" hidden>
+        <div id="combat-hud" class="hud" aria-label="전투 상태">
+          <button id="menu-button" class="menu-button" type="button" aria-label="메뉴" aria-haspopup="dialog" aria-controls="menu-dialog" aria-expanded="false"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg></button>
+          <div class="hud-record"><time id="run-time" aria-label="생존 시간">00:00</time></div>
+          <div class="hud-kills"><svg viewBox="-19 -19 39 37" aria-hidden="true"><path d="M-14 6Q-17 0 -12 -6Q-13 -14 -5 -13Q1 -19 7 -13Q15 -14 15 -5Q20 2 15 8Q14 14 8 11Q2 16 -3 12Q-12 16 -14 6Z" fill="currentColor"/><g fill="#244b53"><circle cx="-4" cy="-2" r="2"/><circle cx="5" cy="-2" r="2"/></g></svg><span class="visually-hidden">처치 </span><strong id="kills">0</strong></div>
+          <div class="experience-strip" id="experience-strip" aria-label="성장 상태">
+            <div id="experience-meter" class="experience-track" role="progressbar" aria-label="경험치" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0"><i id="experience-fill"></i></div>
+            <strong id="player-level" aria-label="플레이어 레벨">1</strong><span id="experience-copy" class="visually-hidden">0 / 5</span>
+          </div>
+        </div>
+        <p id="control-hint" class="control-hint">방향키로 이동 <span>·</span> 터치 드래그 <span>·</span> 자동 사격</p>
+        <p id="growth-resume-hint" class="control-hint growth-resume-hint" role="status" hidden>강화 완료 · 움직이면 전투가 계속됩니다</p>
+        <dialog id="level-up-dialog" class="level-up-dialog" aria-labelledby="upgrade-title" aria-describedby="upgrade-subtitle">
+          <header class="upgrade-heading"><span id="upgrade-level" class="visually-hidden">레벨 2</span><h1 id="upgrade-title">능력 선택</h1></header>
+          <div id="upgrade-choices" class="upgrade-choices"></div>
+          <p id="upgrade-subtitle" class="visually-hidden">강화 하나를 선택하세요</p>
+        </dialog>
+        <dialog id="menu-dialog" class="game-dialog" aria-labelledby="menu-title">
+          <header class="dialog-header"><div><h1 id="menu-title">일시 정지</h1><p id="menu-subtitle">잠시 쉬어 가세요.</p></div><button id="menu-close" class="icon-button" type="button" aria-label="메뉴 닫고 계속하기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></header>
+          <div class="dialog-body">
+            <section data-page="menu" aria-label="일시 정지 메뉴">
+              <button id="resume-button" class="primary wide" type="button" data-action="resume"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 10 7-10 7Z"/></svg>계속하기</button>
+              <div class="menu-links">
+                <button type="button" data-action="stats">플레이어 스탯<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+                <button type="button" data-action="settings">환경설정<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+                <button type="button" data-action="restart">다시 시작<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+              </div>
+            </section>
+            <section data-page="stats" class="player-stats" aria-label="플레이어 스탯" hidden>
+              <div class="stat-groups">
+                <section><h2>공격</h2><dl>
+                  <div><dt>공격력</dt><dd data-stat="attackDamage"></dd></div>
+                  <div><dt>공격 속도</dt><dd data-stat="attackSpeed"></dd></div>
+                  <div><dt>치명타 확률</dt><dd data-stat="critChance"></dd></div>
+                  <div><dt>치명타 피해량</dt><dd data-stat="critMultiplier"></dd></div>
+                </dl></section>
+                <section><h2>생존 · 이동</h2><dl>
+                  <div><dt>최대 체력</dt><dd data-stat="maxHealth"></dd></div>
+                  <div><dt>이동 속도</dt><dd data-stat="moveSpeed"></dd></div>
+                  <div><dt>크기</dt><dd data-stat="size"></dd></div>
+                  <div><dt>피해 흡혈</dt><dd data-stat="lifesteal"></dd></div>
+                </dl></section>
+              </div>
+              <p class="help-text">피해 흡혈은 실제로 준 피해에 비례해 체력을 회복합니다.</p>
+            </section>
+            <section data-page="settings" aria-label="환경설정" hidden>
+              <div class="setting-row"><div><strong>전체 화면</strong><p>브라우저 바깥 여백 없이 플레이합니다.</p></div><button id="fullscreen-button" class="secondary" type="button">켜기</button></div>
+              <label class="setting-row" for="reduced-effects"><span><strong>피격 효과 줄이기</strong><span class="setting-description">이동 흔들림과 피격 명도 변화를 줄이고 사망 축소를 짧은 페이드로 바꿉니다.</span></span><input id="reduced-effects" type="checkbox" /></label>
+              <p id="settings-status" class="help-text" role="status"></p>
+              <section class="control-guide"><h2>조작 안내</h2><dl><div><dt>이동</dt><dd>방향키 / 터치 드래그</dd></div><div><dt>공격</dt><dd>자동 사격</dd></div><div><dt>메뉴</dt><dd>Esc</dd></div></dl></section>
+            </section>
+            <section data-page="restart" aria-label="다시 시작 확인" hidden><p class="confirm-copy">현재 기록을 지우고<br>새로운 공터에서 시작할까요?</p><p class="help-text">진행 중인 게임은 저장되지 않습니다.</p><div class="confirm-actions"><button class="primary" type="button" data-action="confirm-restart">새로 시작</button><button class="secondary" type="button" data-action="back">취소</button></div></section>
+          </div>
+          <footer class="dialog-footer"><button id="menu-back" class="back-button" type="button" data-action="back" hidden>메뉴로 돌아가기</button><span id="pause-note">전투가 멈춰 있습니다.</span><span class="keyboard-hint">Esc로 돌아가기</span></footer>
+        </dialog>
+        <div id="results" class="results" role="dialog" aria-modal="true" aria-labelledby="results-title" hidden>
           <div class="results-card">
-            <h1>게임 오버</h1>
+            <h1 id="results-title">게임 오버</h1>
             <p id="summary"></p>
             <button id="restart" type="button">다시 시작</button>
           </div>
         </div>
       </div>
-      <p class="controls">방향키 또는 터치 드래그로 이동 · 자동 사격</p>
-      <details class="player-stats">
-        <summary>플레이어 스탯</summary>
-        <dl>
-          <div><dt>공격력</dt><dd data-stat="attackDamage"></dd></div>
-          <div><dt>공격 속도</dt><dd data-stat="attackSpeed"></dd></div>
-          <div><dt>치명타 확률</dt><dd data-stat="critChance"></dd></div>
-          <div><dt>치명타 피해량</dt><dd data-stat="critMultiplier"></dd></div>
-          <div><dt>체력</dt><dd data-stat="maxHealth"></dd></div>
-          <div><dt>이동 속도</dt><dd data-stat="moveSpeed"></dd></div>
-          <div><dt>크기</dt><dd data-stat="size"></dd></div>
-          <div><dt>피해 흡혈</dt><dd data-stat="lifesteal"></dd></div>
-        </dl>
-      </details>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>

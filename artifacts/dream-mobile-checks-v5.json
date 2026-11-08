@@ -1,0 +1,186 @@
+{
+  "checks": [
+    {
+      "check": "320×568 viewport, 48px pause, independent centered timer",
+      "geometry": {
+        "screen": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 568,
+          "right": 320,
+          "bottom": 568
+        },
+        "pause": {
+          "x": 12,
+          "y": 24,
+          "width": 48,
+          "height": 48,
+          "right": 60,
+          "bottom": 72
+        },
+        "time": {
+          "x": 108,
+          "y": 9,
+          "width": 104,
+          "height": 44,
+          "right": 212,
+          "bottom": 53
+        },
+        "kills": {
+          "x": 248,
+          "y": 24,
+          "width": 60,
+          "height": 48,
+          "right": 308,
+          "bottom": 72
+        },
+        "overflow": false,
+        "font": "Jua, Pretendard, sans-serif"
+      },
+      "passed": true
+    },
+    {
+      "check": "360×640 viewport, 48px pause, independent centered timer",
+      "geometry": {
+        "screen": {
+          "x": 0,
+          "y": 0,
+          "width": 360,
+          "height": 640,
+          "right": 360,
+          "bottom": 640
+        },
+        "pause": {
+          "x": 12,
+          "y": 24,
+          "width": 48,
+          "height": 48,
+          "right": 60,
+          "bottom": 72
+        },
+        "time": {
+          "x": 128,
+          "y": 9,
+          "width": 104,
+          "height": 44,
+          "right": 232,
+          "bottom": 53
+        },
+        "kills": {
+          "x": 288,
+          "y": 24,
+          "width": 60,
+          "height": 48,
+          "right": 348,
+          "bottom": 72
+        },
+        "overflow": false,
+        "font": "Jua, Pretendard, sans-serif"
+      },
+      "passed": true
+    },
+    {
+      "check": "390×844 viewport, 48px pause, independent centered timer",
+      "geometry": {
+        "screen": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844,
+          "right": 390,
+          "bottom": 844
+        },
+        "pause": {
+          "x": 12,
+          "y": 24,
+          "width": 48,
+          "height": 48,
+          "right": 60,
+          "bottom": 72
+        },
+        "time": {
+          "x": 143,
+          "y": 9,
+          "width": 104,
+          "height": 44,
+          "right": 247,
+          "bottom": 53
+        },
+        "kills": {
+          "x": 318,
+          "y": 24,
+          "width": 60,
+          "height": 48,
+          "right": 378,
+          "bottom": 72
+        },
+        "overflow": false,
+        "font": "Jua, Pretendard, sans-serif"
+      },
+      "passed": true
+    },
+    {
+      "check": "412×915 viewport, 48px pause, independent centered timer",
+      "geometry": {
+        "screen": {
+          "x": 0,
+          "y": 0,
+          "width": 412,
+          "height": 915,
+          "right": 412,
+          "bottom": 915
+        },
+        "pause": {
+          "x": 12,
+          "y": 24,
+          "width": 48,
+          "height": 48,
+          "right": 60,
+          "bottom": 72
+        },
+        "time": {
+          "x": 154,
+          "y": 9,
+          "width": 104,
+          "height": 44,
+          "right": 258,
+          "bottom": 53
+        },
+        "kills": {
+          "x": 340,
+          "y": 24,
+          "width": 60,
+          "height": 48,
+          "right": 400,
+          "bottom": 72
+        },
+        "overflow": false,
+        "font": "Jua, Pretendard, sans-serif"
+      },
+      "passed": true
+    },
+    {
+      "check": "simulated safe area 44 top / 34 bottom / 8 sides",
+      "safe": {
+        "pauseTop": 68,
+        "timeTop": 53,
+        "noteBottom": 798
+      },
+      "passed": true
+    },
+    {
+      "check": "pressed pause keeps its touch target stable",
+      "passed": true
+    },
+    {
+      "check": "touch pause → settings → menu → resume",
+      "passed": true
+    },
+    {
+      "check": "no runtime errors",
+      "passed": true
+    }
+  ],
+  "errors": []
+}

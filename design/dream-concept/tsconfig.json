@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+    "types": ["../../.agents/skills/stageshow/node_modules/vite/client"],
+    "paths": {
+      "react": ["../../.agents/skills/stageshow/node_modules/@types/react"],
+      "react/*": ["../../.agents/skills/stageshow/node_modules/@types/react/*"],
+      "react-dom": ["../../.agents/skills/stageshow/node_modules/@types/react-dom"],
+      "react-dom/*": ["../../.agents/skills/stageshow/node_modules/@types/react-dom/*"],
+      "lucide-react": ["../../.agents/skills/stageshow/node_modules/lucide-react"]
+    }
+  },
+  "include": ["main.tsx", "kit/**/*.ts", "kit/**/*.tsx"]
+}

@@ -5,7 +5,7 @@ const tickMs = 1000 / 60;
 async function load(page: Page, fixture: ArenaFixture, stress = false): Promise<void> {
   await page.goto('/?simtest=1' + (stress ? '&stress=1' : ''));
   await page.waitForFunction(() => window.__arenaTest !== undefined);
-  await page.evaluate(options => window.__arenaTest!.configure(options), fixture);
+  await page.evaluate(options => window.__arenaTest!.configure({ progression: false, bounds: { width: 360, height: 640 }, ...options }), fixture);
 }
 
 async function audit(page: Page, ticks: number, recoveryTicks = 0, stress = false) {
@@ -33,12 +33,12 @@ async function audit(page: Page, ticks: number, recoveryTicks = 0, stress = fals
       };
       bounded(state.player, 12, 'player');
       for (const enemy of state.enemies) {
-        bounded(enemy, 10, 'enemy ' + enemy.id);
-        if (Math.hypot(enemy.x - state.player.x, enemy.y - state.player.y) < 22 - 1e-6) errors.push('player overlap');
+        bounded(enemy, enemy.radius, 'enemy ' + enemy.id);
+        if (Math.hypot(enemy.x - state.player.x, enemy.y - state.player.y) < state.playerRadius + enemy.radius - 1e-6) errors.push('player overlap');
       }
       for (let a = 0; a < state.enemies.length; a++) for (let b = a + 1; b < state.enemies.length; b++) {
         const first = state.enemies[a], second = state.enemies[b];
-        const depthPx = Math.max(0, 20 - Math.hypot(first.x - second.x, first.y - second.y));
+        const depthPx = Math.max(0, first.radius + second.radius - Math.hypot(first.x - second.x, first.y - second.y));
         if (tick >= recoveryTicks) {
           maxDepthPx = Math.max(maxDepthPx, depthPx);
           if (depthPx > 1) errors.push('pair ' + first.id + '/' + second.id + ' overlap ' + depthPx.toFixed(4) + 'px');

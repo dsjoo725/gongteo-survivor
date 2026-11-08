@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="data:,"><title>HUD 접합과 모바일 설계 검토</title>
+<style>
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css');
+*{box-sizing:border-box}body{margin:0;background:#efeee6;color:#293e33;font-family:Pretendard,'Malgun Gothic',sans-serif}.sheet{width:1000px;padding:34px 40px;margin:auto}.eyebrow{font-size:11px;letter-spacing:1.8px;color:#57664f}h1{font-size:28px;letter-spacing:-.7px;margin:12px 0 8px}p{font-size:14px;line-height:1.55;margin:0;color:#53624e}.section{margin-top:28px;border-top:1px solid #cbd1c1;padding-top:20px}h2{font-size:17px;margin:0 0 16px}.reference{display:block;width:100%;height:auto}.points{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:12px}.points strong{display:block;font-size:15px;line-height:1.5;margin-bottom:4px}.points p{font-size:13px}.index{color:#9b5d50;font-weight:700;margin-right:6px}.columns{display:grid;grid-template-columns:1.2fr 1fr;gap:40px;align-items:start}.concept{display:block;width:100%;height:auto;background:#d5dec9}.note{font-size:12px;margin-top:10px}.rules{margin:0;padding-left:18px;color:#43573e;font-size:14px;line-height:1.7}.rules li+li{margin-top:8px}.bottom{display:flex;justify-content:space-between;gap:20px;font-size:11px;color:#53624e;margin-top:24px}.tag{font-size:11px;font-weight:600;color:#96594d;letter-spacing:.5px}.caption{font-size:12px;margin-top:12px;line-height:1.6}.mobile{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}.mobile strong{font-size:14px;display:block;margin-bottom:5px}.mobile p{font-size:13px}
+</style></head><body><main class="sheet">
+<div class="eyebrow">HUD DETAIL STUDY · 2026.11.05</div><h1>화면 가장자리에 붙어 있는 HUD</h1><p>탕탕특공대의 접합·재질을 관찰하고, 꿈속 콘셉트에 적용할 구조를 검토했습니다.</p>
+<section class="section"><h2>01. 원작에서 관찰한 세 가지 접합</h2>
+<svg class="reference" viewBox="0 0 750 205" role="img" aria-label="정지 버튼은 왼쪽 탭, 타이머는 위에서 내려온 판, 수치는 오른쪽으로 이어지는 띠로 배치된다.">
+<defs><clipPath id="hud"><rect width="750" height="150"/></clipPath></defs><image href="../references/survivorio-combat-reference.jpg" width="750" height="1334" clip-path="url(#hud)"/>
+<g fill="none" stroke="#ab6555" stroke-width="2"><path d="M70 75V172H115V185"/><path d="M375 57V185"/><path d="M695 80V172H635V185"/></g>
+<g fill="#ab6555"><circle cx="70" cy="75" r="4"/><circle cx="375" cy="57" r="4"/><circle cx="695" cy="80" r="4"/></g>
+<g fill="#293e33" font-family="Pretendard,sans-serif" font-size="13" text-anchor="middle"><text x="115" y="202">왼쪽 면이 이어진 탭</text><text x="375" y="202">상단에서 내려오는 판</text><text x="635" y="202">오른쪽으로 이어지는 띠</text></g>
+</svg>
+<div class="points"><div><strong><span class="index">A</span>붙는 방향이 보이는 외곽선</strong><p>모든 면을 닫아 띄우기보다 화면 끝과 이어지는 면을 둡니다.</p></div><div><strong><span class="index">B</span>한 재질로 묶는 두께와 빛</strong><p>어두운 윤곽·밝은 윗면·짧은 아래 두께가 여러 UI에서 반복됩니다.</p></div><div><strong><span class="index">C</span>읽을 면과 장식 면의 구분</strong><p>문자와 아이콘의 바탕은 단순하게, 개성은 가장자리와 접합부에 둡니다.</p></div></div>
+</section>
+<section class="section"><div class="columns"><div><h2>02. 우리 게임의 구조 검토안</h2>
+<svg class="concept" viewBox="0 0 420 180" role="img" aria-label="아이보리 창틀에서 중앙 시간 표찰이 내려오고 좌측 회분홍 정지 탭과 우측 기록 띠가 붙는다. 정지 탭 내부에는 48픽셀 터치 면이 놓인다.">
+<rect width="420" height="180" fill="#d5dec9"/><path d="M0 150H420M0 174H420M70 126V180M140 126V180M210 126V180M280 126V180M350 126V180" stroke="#a6b99a" stroke-width=".6"/>
+<rect width="420" height="24" fill="#e2d6bd"/><text x="210" y="16" text-anchor="middle" font-family="Pretendard,sans-serif" font-size="10" fill="#59684e">장치별 안전 영역 · 높이는 예시</text>
+<path d="M0 24H420V38H284Q275 38 275 50V65Q275 82 258 82H162Q145 82 145 65V50Q145 38 136 38H0Z" fill="#b9c0a8"/>
+<path d="M0 24H420V34H284Q271 34 271 48V62Q271 77 256 77H164Q149 77 149 62V48Q149 34 136 34H0Z" fill="#f8f4e7" stroke="#687b5b" stroke-width="1.2"/>
+<path d="M-8 42H61Q77 42 77 58V78Q77 94 61 94H-8Z" fill="#bd9d8b"/><path d="M-8 38H61Q77 38 77 54V74Q77 90 61 90H-8Z" fill="#e2b8a9" stroke="#887460" stroke-width="1.2"/>
+<rect x="14" y="40" width="48" height="48" rx="5" fill="none" stroke="#99594a" stroke-dasharray="4 3"/><text x="38" y="68" text-anchor="middle" font-size="13" font-family="Pretendard,sans-serif" fill="#293e33">정지</text>
+<path d="M341 34H420V87H354Q341 87 341 74Z" fill="#bdc4ae"/><path d="M341 30H420V83H354Q341 83 341 70Z" fill="#f8f4e7" stroke="#687b5b" stroke-width="1.2"/>
+<g font-family="Pretendard,sans-serif" fill="#293e33" text-anchor="middle"><text x="210" y="60" font-size="25" font-weight="600">03:24</text><text x="380" y="48" font-size="10">처치</text><text x="380" y="69" font-size="19" font-weight="600">128</text><text x="98" y="116" font-size="10" fill="#99594a">점선: 안쪽의 실제 터치 면</text></g>
+<path d="M38 89V106H46" fill="none" stroke="#99594a"/>
+<text x="210" y="160" text-anchor="middle" font-size="11" font-family="Pretendard,sans-serif" fill="#53624e">형태와 접합을 설명하는 검토 그림 · 완성 시안 아님</text>
+</svg><p class="note">현재의 문·의자와 연결되는 아이보리 창틀 + 회분홍 끼움 탭을 추천합니다.</p></div>
+<div><h2>적용할 때 지킬 것</h2><ul class="rules"><li>세 조각의 연결부를 먼저 설계하고 같은 선·빛·두께를 공유합니다.</li><li>가장자리로 이어지는 장식과 안전 영역 안의 터치 면을 분리합니다.</li><li>경험치 시스템이 없으면 긴 진행 바를 추가하지 않습니다.</li><li>누르면 아래 두께가 짧아지고, 글자와 이웃의 정렬은 유지됩니다.</li></ul></div></div></section>
+<section class="section"><h2>03. 모바일을 기본 제품 화면으로</h2><div class="mobile"><div><strong>실제 터치 면 48×48 CSS px</strong><p>프로젝트 제안값입니다. 장식이 잘려도 터치 영역과 문자는 안전 영역 안에 남깁니다.</p></div><div><strong>한 손 이동과 손가락 가림</strong><p>중앙 전장을 비우고 하단 접점을 확보합니다. UI에서 시작한 터치를 이동에 넘기지 않습니다.</p></div><div><strong>작은 폰부터 검증</strong><p>320×568부터 긴 폰·노치·주소창 변화를 확인하고 PC로 확장합니다.</p></div></div></section>
+<p class="caption">원작 관찰은 TapTap(2022)·Uptodown(2023)·Talk Android(2023)의 정지 이미지 기준입니다. 실제 슬라이드 모션과 터치 영역은 확인하지 않았습니다.</p>
+<div class="bottom"><span>출처: taptap.io/vn/post/1740382 · 상세 출처와 입력 검토는 동반 문서에 기록</span><span class="tag">ANALYSIS / PROPOSAL</span></div>
+</main></body></html>

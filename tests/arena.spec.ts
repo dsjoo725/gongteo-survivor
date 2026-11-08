@@ -3,12 +3,12 @@ import type { ArenaFixture, ArenaSnapshot } from '../src/testing';
 
 const tickMs = 1000 / 60;
 const right = { x: 1, y: 0 };
-const lethalContact = { x: 201, y: 320 };
+const lethalContact = { x: 201, y: 320, health: 1 };
 
 async function load(page: Page, fixture: ArenaFixture, stress = false): Promise<void> {
   await page.goto(stress ? '/?simtest=1&stress=1' : '/?simtest=1');
   await page.waitForFunction(() => window.__arenaTest !== undefined);
-  await page.evaluate((options) => window.__arenaTest!.configure(options), fixture);
+  await page.evaluate((options) => window.__arenaTest!.configure({ progression: false, bounds: { width: 360, height: 640 }, ...options }), fixture);
 }
 
 function snapshot(page: Page): Promise<ArenaSnapshot> {
@@ -40,7 +40,8 @@ test('the same 120 ticks produce the same movement and combat events at 30 and 6
   await load(page, fixture);
   const at30 = await advance(page, tickMs * 2, 60);
   expect(at60.tick).toBe(120);
-  expect(at60.health).toBe(2);
+  // The two-HP scheduled enemy survives until shot two, allowing contact at tick 49.
+  expect(at60.health).toBe(1);
   expect(at60.kills).toBeGreaterThan(0);
   expect(at60.player.x).toBeGreaterThan(180);
   for (const type of ['spawn', 'shot', 'kill', 'damage']) {
@@ -49,7 +50,8 @@ test('the same 120 ticks produce the same movement and combat events at 30 and 6
   const { player, enemies, bullets, ...state } = at60;
   expect(state).toEqual({
     round: at30.round, tick: at30.tick, health: at30.health, kills: at30.kills, events: at30.events,
-    stats: at30.stats, playerRadius: at30.playerRadius,
+    stats: at30.stats, playerRadius: at30.playerRadius, combatEvents: at30.combatEvents,
+    progression: at30.progression, awaitingGrowthInput: at30.awaitingGrowthInput,
   });
   expectSamePosition(player, at30.player);
   expect(enemies.map(({ id }) => id)).toEqual(at30.enemies.map(({ id }) => id));
@@ -74,7 +76,7 @@ test('one bullet chooses the nearest overlapping enemy, then the earlier spawn o
   for (const [upperY, expectedId] of [[307, 1], [306.8, 2]]) {
     await load(page, {
       spawns: [],
-      enemies: [{ x: 220, y: upperY }, { x: 220, y: 333 }],
+      enemies: [{ x: 220, y: upperY, health: 1 }, { x: 220, y: 333, health: 1 }],
       bullets: [{ position: { x: 220, y: 320 }, velocity: { x: 0, y: 0 } }],
     });
     const state = await advance(page, tickMs);
@@ -120,7 +122,7 @@ test('bullet can hit on its final tick and is recycled on expiry or offscreen', 
   await load(page, {
     player: { x: 12, y: 320 },
     spawns: [],
-    enemies: [{ x: 320, y: 320 }],
+    enemies: [{ x: 320, y: 320, health: 1 }],
     bullets: [
       { position: { x: 222, y: 320 }, velocity: { x: 0, y: 0 } },
       { position: { x: 100, y: 100 }, velocity: { x: 0, y: 0 } },
@@ -208,11 +210,11 @@ test('lethal contact halts a multi-step frame and three UI restarts reset the ro
       { type: 'damage', tick: 1, health: 0 },
     ]);
     await expect(restart).toBeVisible();
-    expect((await page.evaluate(() => window.__arenaTest!.feedback())).playerFlashing).toBe(true);
+    expect((await page.evaluate(() => window.__arenaTest!.feedback())).playerHitActive).toBe(true);
     const ended = await advance(page, 120);
     expect(ended.tick).toBe(1);
     expect(ended.player).toEqual(state.player);
-    expect((await page.evaluate(() => window.__arenaTest!.feedback())).playerFlashing).toBe(false);
+    expect((await page.evaluate(() => window.__arenaTest!.feedback())).playerHitActive).toBe(false);
     if (round === 4) break;
     if (round === 2) await restart.press('Enter');
     else await restart.click();
@@ -223,6 +225,8 @@ test('lethal contact halts a multi-step frame and three UI restarts reset the ro
 
 test('the regular page runs autonomously without a test hook', async ({ page }) => {
   await page.goto('/');
+  await expect(page.locator('#title-start')).toBeEnabled();
+  await page.locator('#title-start').click();
   await expect(page.locator('canvas')).toBeVisible();
   await page.keyboard.press('ArrowRight');
   await expect.poll(async () => Number(await page.locator('#kills').textContent()), { timeout: 8_000 })
@@ -273,7 +277,7 @@ test('player and enemy bodies separate while contact damage is retained', async 
 test('exact bullet tangency counts outside player separation', async ({ page }) => {
   await load(page, {
     spawns: [],
-    enemies: [{ x: 300 + 95 / 60, y: 320 }],
+    enemies: [{ x: 300 + 95 / 60, y: 320, health: 1 }],
     bullets: [{ position: { x: 280, y: 320 }, velocity: { x: 420, y: 0 } }],
   });
   const state = await advance(page, tickMs);
@@ -301,67 +305,69 @@ test('enemy contact cannot push the player through a wall or corner', async ({ p
   }
 });
 
-test('a hit flashes briefly, including after a kill reuses the enemy body', async ({ page }) => {
+test('the basic enemy survives one default hit and dies on the second, without marking its recycled body', async ({ page }) => {
   await load(page, {
     spawns: [{ tick: 2, position: { x: 40, y: 100 } }],
-    enemies: [{ x: 300 + 95 / 60, y: 320, health: 2 }],
+    enemies: [{ x: 300, y: 320, stats: { moveSpeed: 0 } }],
     bullets: [
-      { position: { x: 288, y: 320 }, velocity: { x: 0, y: 0 } },
-      { position: { x: 272, y: 320 }, velocity: { x: 420, y: 0 } },
+      { position: { x: 300, y: 320 }, velocity: { x: 0, y: 0 } },
+      { position: { x: 276, y: 320 }, velocity: { x: 420, y: 0 } },
     ],
   });
   expect((await advance(page, tickMs)).enemies[0].health).toBe(1);
   let visual = await page.evaluate(() => window.__arenaTest!.feedback());
-  expect(visual.enemyFlashes).toEqual([{ id: 1, x: 300, y: 320, ageMs: 0 }]);
+  expect(visual.enemyHits).toEqual([{ id: 1, x: 303, y: 320, ageMs: 0 }]);
+  expect(visual.enemyDeaths).toEqual([]);
   const killed = await advance(page, tickMs);
   expect(killed.kills).toBe(1);
   expect(killed.enemies[0].id).toBe(2);
   visual = await page.evaluate(() => window.__arenaTest!.feedback());
-  expect(visual.enemyFlashes).toHaveLength(1);
-  expect(visual.enemyFlashes[0].id).toBe(1);
-  expect(visual.enemyFlashes[0].ageMs).toBe(0);
-  await advance(page, 59);
-  expect((await page.evaluate(() => window.__arenaTest!.feedback())).enemyFlashes).toHaveLength(1);
+  expect(visual.enemyHits).toEqual([]);
+  expect(visual.enemyDeaths).toHaveLength(1);
+  expect(visual.enemyDeaths[0]).toMatchObject({ id: 1, ageMs: 0, radius: 10, texture: 'paint-enemy' });
+  await advance(page, 99);
+  expect((await page.evaluate(() => window.__arenaTest!.feedback())).enemyDeaths).toHaveLength(1);
   await advance(page, 1);
-  expect((await page.evaluate(() => window.__arenaTest!.feedback())).enemyFlashes).toEqual([]);
+  expect((await page.evaluate(() => window.__arenaTest!.feedback())).enemyHits).toEqual([]);
+  expect((await page.evaluate(() => window.__arenaTest!.feedback())).enemyDeaths).toEqual([]);
 });
 
-test('only accepted player damage changes color and invulnerable contact does not extend it', async ({ page }) => {
+test('only accepted player damage dims the body and invulnerable contact does not extend it', async ({ page }) => {
   await load(page, { spawns: [], enemies: [{ ...lethalContact, health: 100 }] });
   expect((await advance(page, tickMs)).health).toBe(2);
-  expect((await page.evaluate(() => window.__arenaTest!.feedback())).playerFlashing).toBe(true);
+  expect((await page.evaluate(() => window.__arenaTest!.feedback())).playerHitActive).toBe(true);
   await advance(page, 60);
-  expect((await page.evaluate(() => window.__arenaTest!.feedback())).playerFlashing).toBe(true);
+  expect((await page.evaluate(() => window.__arenaTest!.feedback())).playerHitActive).toBe(true);
   await advance(page, 60);
-  expect((await page.evaluate(() => window.__arenaTest!.feedback())).playerFlashing).toBe(false);
+  expect((await page.evaluate(() => window.__arenaTest!.feedback())).playerHitActive).toBe(false);
   expect((await snapshot(page)).health).toBe(2);
   while ((await snapshot(page)).tick < 48) await advance(page, tickMs);
-  expect((await page.evaluate(() => window.__arenaTest!.feedback())).playerFlashing).toBe(false);
+  expect((await page.evaluate(() => window.__arenaTest!.feedback())).playerHitActive).toBe(false);
   expect((await advance(page, tickMs)).health).toBe(1);
-  expect((await page.evaluate(() => window.__arenaTest!.feedback())).playerFlashing).toBe(true);
+  expect((await page.evaluate(() => window.__arenaTest!.feedback())).playerHitActive).toBe(true);
 });
 
-test('pause freezes flash lifetimes and restart clears them', async ({ page }) => {
+test('pause freezes feedback lifetimes and restart clears them', async ({ page }) => {
   await load(page, { health: 1, enemies: [lethalContact], spawns: [] });
   await advance(page, tickMs * 4);
   await expect(page.getByRole('button', { name: '다시 시작' })).toBeVisible();
   await page.evaluate(() => window.__arenaTest!.setPaused(true));
   await advance(page, 250);
-  expect((await page.evaluate(() => window.__arenaTest!.feedback())).playerFlashing).toBe(true);
+  expect((await page.evaluate(() => window.__arenaTest!.feedback())).playerHitActive).toBe(true);
   await page.evaluate(() => window.__arenaTest!.setPaused(false));
   await page.getByRole('button', { name: '다시 시작' }).click();
   await expect.poll(async () => (await snapshot(page)).round).toBe(2);
   expect(await page.evaluate(() => window.__arenaTest!.feedback())).toEqual({
-    enemyFlashes: [], playerFlashing: false,
+    enemyHits: [], enemyDeaths: [], playerHitActive: false,
   });
 });
 
-test('the page exposes the two flashes without sound controls or horizontal overflow', async ({ page }) => {
+test('minimal feedback stays bounded without sound controls or horizontal overflow', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await load(page, { seed: 'simple-stress' }, true);
   await advance(page, tickMs * 4, 100);
   expect((await snapshot(page)).enemies).toHaveLength(80);
-  expect((await page.evaluate(() => window.__arenaTest!.feedback())).enemyFlashes.length)
+  expect((await page.evaluate(() => window.__arenaTest!.feedback())).enemyHits.length)
     .toBeLessThanOrEqual(8);
   await expect(page.locator('#sound')).toHaveCount(0);
   await expect(page.locator('#sound-status')).toHaveCount(0);
@@ -409,8 +415,8 @@ async function boundaryViolations(page: Page, ticks: number): Promise<string[]> 
       };
       check(state.player, 12, 'player');
       for (const enemy of state.enemies) {
-        check(enemy, 10, 'enemy ' + enemy.id);
-        if (Math.hypot(enemy.x - state.player.x, enemy.y - state.player.y) < 22 - 1e-6) {
+        check(enemy, enemy.radius, 'enemy ' + enemy.id);
+        if (Math.hypot(enemy.x - state.player.x, enemy.y - state.player.y) < state.playerRadius + enemy.radius - 1e-6) {
           violations.push('enemy ' + enemy.id + ' overlaps player at tick ' + state.tick);
         }
       }
@@ -445,7 +451,7 @@ test('final crowd contact deals damage after the other enemy is killed', async (
     player: { x: 328, y: 320 },
     // Both remain outside player contact after their 95/60px physical move.
     // Crowd separation pushes id1 to the player's left tangent at x306.
-    enemies: [{ x: 304, y: 320 }, { x: 300, y: 320 }],
+    enemies: [{ x: 304, y: 320, health: 1 }, { x: 300, y: 320, health: 1 }],
     bullets: [{ position: { x: 280, y: 320 }, velocity: { x: 420, y: 0 } }],
     spawns: [],
   });

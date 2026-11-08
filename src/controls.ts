@@ -1,4 +1,4 @@
-import { ARENA, type Point } from './rules';
+import type { Point } from './rules';
 
 export const JOYSTICK_RADIUS = 46;
 const DEAD_ZONE = 7;
@@ -11,11 +11,12 @@ interface Joystick {
 }
 
 export class MoveControls {
+  enabled = true;
   joystick: Joystick | undefined;
   private readonly keys = new Set<string>();
   private readonly listeners = new AbortController();
 
-  constructor(private readonly canvas: HTMLCanvasElement) {
+  constructor(private readonly canvas: HTMLCanvasElement, private readonly toWorld: (x: number, y: number) => Point) {
     const { signal } = this.listeners;
     window.addEventListener('keydown', this.keyDown, { signal });
     window.addEventListener('keyup', this.keyUp, { signal });
@@ -27,6 +28,7 @@ export class MoveControls {
   }
 
   direction(): Point {
+    if (!this.enabled) return { x: 0, y: 0 };
     if (this.joystick) {
       const { x, y } = this.joystick.offset;
       const length = Math.hypot(x, y);
@@ -56,6 +58,7 @@ export class MoveControls {
   }
 
   private keyDown = (event: KeyboardEvent): void => {
+    if (!this.enabled) return;
     if (!ARROW_KEYS.has(event.key) || event.altKey || event.ctrlKey || event.metaKey) return;
     event.preventDefault();
     if (!event.repeat) this.keys.add(event.key);
@@ -67,14 +70,11 @@ export class MoveControls {
 
   private pointerPosition(event: PointerEvent): Point {
     const bounds = this.canvas.getBoundingClientRect();
-    return {
-      x: ((event.clientX - bounds.left) / bounds.width) * ARENA.width,
-      y: ((event.clientY - bounds.top) / bounds.height) * ARENA.height,
-    };
+    return this.toWorld((event.clientX - bounds.left) / bounds.width, (event.clientY - bounds.top) / bounds.height);
   }
 
   private pointerDown = (event: PointerEvent): void => {
-    if (event.pointerType !== 'touch' || !event.isPrimary || this.joystick) return;
+    if (!this.enabled || event.pointerType !== 'touch' || !event.isPrimary || this.joystick) return;
     this.canvas.setPointerCapture(event.pointerId);
     this.joystick = {
       pointerId: event.pointerId,

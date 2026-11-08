@@ -8,7 +8,7 @@ const tickMs = 1000 / 60;
 async function load(page: Page, fixture: ArenaFixture = {}): Promise<void> {
   await page.goto('/?simtest=1');
   await page.waitForFunction(() => window.__arenaTest !== undefined);
-  await page.evaluate(options => window.__arenaTest!.configure(options), fixture);
+  await page.evaluate(options => window.__arenaTest!.configure({ progression: false, bounds: { width: 360, height: 640 }, ...options }), fixture);
 }
 
 async function advance(page: Page, ticks = 1) {
@@ -45,8 +45,8 @@ test('invalid, nonfinite and oversized stats are rejected and valid boundaries w
   expect(() => createPlayerStats({ attackDamage: 0, attackSpeed: 0, moveSpeed: 0,
     critChance: 1, critMultiplier: 1, lifesteal: 1, size: 15 })).not.toThrow();
   expect(shotIntervalTicks(createPlayerStats({ attackSpeed: 0 }))).toBe(Infinity);
-  expect(shotIntervalTicks(createPlayerStats({ attackSpeed: 7 }))).toBe(9);
-  expect(shotIntervalTicks(createPlayerStats({ attackSpeed: 1000 }))).toBe(1);
+  expect(shotIntervalTicks(createPlayerStats({ attackSpeed: 7 }))).toBeCloseTo(60 / 7);
+  expect(shotIntervalTicks(createPlayerStats({ attackSpeed: 1000 }))).toBeCloseTo(0.06);
   expect(formatStat(0.001)).toBe('<0.01');
 });
 
@@ -129,14 +129,16 @@ test('lifesteal includes critical damage and caps healing at max HP', async ({ p
   expect(state.enemies[0].health).toBe(11);
 });
 
-test('a nonlethal bullet heals before surviving enemy contact damage', async ({ page }) => {
+test('a nonlethal bullet heals and its recoil prevents contact until the enemy closes in again', async ({ page }) => {
   await load(page, { stats: { attackSpeed: 0, lifesteal: 0.5 }, health: 0.75,
     enemies: [{ x: 201, y: 320, health: 10 }],
     bullets: [{ position: { x: 193, y: 320 }, velocity: { x: 0, y: 0 } }], spawns: [] });
   const state = await advance(page);
-  expect(state.health).toBe(0.25);
+  expect(state.health).toBe(1.25);
   expect(state.enemies[0].health).toBe(9);
   await expect(page.locator('#results')).toBeHidden();
+  const contacted = await advance(page, 8);
+  expect(contacted.health).toBe(0.25);
 });
 
 test('zero attack speed stops firing and zero move speed stops movement', async ({ page }) => {
@@ -148,7 +150,7 @@ test('zero attack speed stops firing and zero move speed stops movement', async 
   expect(state.events.some(event => event.type === 'shot')).toBe(false);
 });
 
-test('one-shot-per-tick attacks exceed eight live bullets without skipped deadlines', async ({ page }) => {
+test('high attack speed preserves logical attacks while sharing at most one visual packet per tick', async ({ page }) => {
   await load(page, { stats: { attackSpeed: 1000, attackDamage: 0, maxHealth: 100 },
     player: { x: 12, y: 12 }, enemies: [{ x: 180, y: 180, health: 100 }], spawns: [] });
   const first = await advance(page, 12);
@@ -156,6 +158,9 @@ test('one-shot-per-tick attacks exceed eight live bullets without skipped deadli
   const state = await advance(page, 108);
   expect(state.events.filter(event => event.type === 'shot').map(event => event.tick))
     .toEqual(Array.from({ length: 120 }, (_, index) => index + 1));
+  expect(state.combatEvents.filter(event => event.type === 'attack' && event.attack.kind === 'projectile')
+    .reduce((sum, event) => sum + (event.type === 'attack' ? event.attack.count : 0), 0)).toBe(2000);
+  expect(state.bullets.length).toBeLessThanOrEqual(55);
 });
 
 for (const size of [0.5, 1.125, 2, 15]) {
@@ -216,7 +221,8 @@ test('critical rolls do not consume spawn randomness', async ({ page }) => {
   const states = [];
   for (const critChance of [0, 0.5]) {
     await load(page, { seed: 'separate-streams', stats: { attackDamage: 0, attackSpeed: 6, critChance, maxHealth: 100 } });
-    const { stats, ...state } = await advance(page, 600);
+    // Critical attack metadata may differ; spawning and resulting world state must not.
+    const { stats, combatEvents, ...state } = await advance(page, 600);
     states.push(state);
   }
   expect(states[0]).toEqual(states[1]);
@@ -253,20 +259,23 @@ test('invalid test configuration can be corrected before starting the run', asyn
   expect((await advance(page)).health).toBe(5);
 });
 
-test('all eight stats are keyboard accessible on mobile without stopping the game', async ({ page }) => {
+test('all eight stats are keyboard accessible inside a paused menu on mobile', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await load(page, { stats: { attackDamage: 2, attackSpeed: 3, critChance: 0.25, critMultiplier: 2.5,
     maxHealth: 5, moveSpeed: 200, size: 1.125, lifesteal: 0.1 }, spawns: [] });
   const panel = page.locator('.player-stats');
-  const summary = panel.locator('summary');
-  await expect(panel).not.toHaveAttribute('open', '');
-  await summary.focus();
+  await expect(panel).toBeHidden();
+  await page.locator('#menu-button').focus();
   await page.keyboard.press('Enter');
-  await expect(panel).toHaveAttribute('open', '');
+  await page.getByRole('button', { name: '플레이어 스탯', exact: true }).focus();
+  await page.keyboard.press('Enter');
+  await expect(panel).toBeVisible();
   await expect(panel.locator('dd')).toHaveText(['2', '3회/초', '25%', '250%', '5', '200px/초', '1.13배', '10%']);
-  expect((await advance(page, 10)).tick).toBe(10);
+  expect((await advance(page, 10)).tick).toBe(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.keyboard.press('Space');
-  await expect(panel).not.toHaveAttribute('open', '');
+  await page.keyboard.press('Escape');
+  await expect(panel).toBeHidden();
+  await page.keyboard.press('Escape');
+  expect((await advance(page, 10)).tick).toBe(10);
   await expect(panel.locator('input')).toHaveCount(0);
 });

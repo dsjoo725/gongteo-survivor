@@ -1,20 +1,9 @@
-export const ARENA = { width: 360, height: 640 };
+import { ARENA, COMBAT } from './config';
+import { CombatActor, resolveDamage } from './combat';
+import { createPlayerStats, type ActorStats } from './stats';
+export { ARENA, COMBAT } from './config';
+export interface ArenaSize { width: number; height: number }
 
-export const COMBAT = {
-  playerRadius: 12,
-  playerSpeed: 180,
-  enemyRadius: 10,
-  enemySpeed: 95,
-  enemyLimit: 80,
-  spawnClearance: 120,
-  shotRange: 240,
-  shotIntervalTicks: 24,
-  bulletRadius: 3,
-  bulletSpeed: 420,
-  bulletLifetimeTicks: 54,
-  maxHealth: 3,
-  damageCooldownTicks: 48,
-};
 
 export interface Point {
   x: number;
@@ -26,25 +15,25 @@ export function distanceSquared(a: Point, b: Point): number {
 }
 
 // Centers must leave room for the whole circle, not just stay on the screen.
-export function clampToArena(point: Point, radius: number): Point {
+export function clampToArena(point: Point, radius: number, arena: ArenaSize = ARENA): Point {
   return {
-    x: Math.max(radius, Math.min(ARENA.width - radius, point.x)),
-    y: Math.max(radius, Math.min(ARENA.height - radius, point.y)),
+    x: Math.max(radius, Math.min(arena.width - radius, point.x)),
+    y: Math.max(radius, Math.min(arena.height - radius, point.y)),
   };
 }
 
 // A wall clamp alone can put an enemy back inside the player. Find the closest
 // legal point on the contact circle, including where that circle meets a wall.
-export function constrainEnemyPosition(point: Point, player: Point, playerRadius = COMBAT.playerRadius): Point {
-  const clamped = clampToArena(point, COMBAT.enemyRadius);
-  const radius = playerRadius + COMBAT.enemyRadius;
+export function constrainEnemyPosition(point: Point, player: Point, playerRadius = COMBAT.playerRadius, arena: ArenaSize = ARENA, enemyRadius = COMBAT.enemyRadius): Point {
+  const clamped = clampToArena(point, enemyRadius, arena);
+  const radius = playerRadius + enemyRadius;
   const distance = Math.hypot(clamped.x - player.x, clamped.y - player.y);
   if (distance >= radius) return clamped;
 
-  const left = COMBAT.enemyRadius;
-  const right = ARENA.width - left;
-  const top = COMBAT.enemyRadius;
-  const bottom = ARENA.height - top;
+  const left = enemyRadius;
+  const right = arena.width - left;
+  const top = enemyRadius;
+  const bottom = arena.height - top;
   const candidates: Point[] = [];
   if (distance > 0) {
     const radial = {
@@ -108,13 +97,15 @@ export function spawnIntervalTicks(tick: number): number {
 }
 
 export function spawnPoint(
-  player: Point, random = Math.random, enemies: Iterable<Point> = [],
+  player: Point, random = Math.random, enemies: Iterable<Point & { radius?: number }> = [],
   playerRadius = COMBAT.playerRadius,
+  arena: ArenaSize = ARENA,
+  enemyRadius = COMBAT.enemyRadius,
 ): Point | undefined {
-  const left = COMBAT.enemyRadius;
-  const top = COMBAT.enemyRadius;
-  const right = ARENA.width - left;
-  const bottom = ARENA.height - top;
+  const left = enemyRadius;
+  const top = enemyRadius;
+  const right = arena.width - left;
+  const bottom = arena.height - top;
   const width = right - left;
   const height = bottom - top;
   const perimeter = 2 * (width + height);
@@ -131,11 +122,11 @@ export function spawnPoint(
     } else {
       point = { x: left, y: bottom - (offset - 2 * width - height) };
     }
-    const clearance = Math.max(COMBAT.spawnClearance, playerRadius + COMBAT.enemyRadius);
+    const clearance = Math.max(COMBAT.spawnClearance, playerRadius + enemyRadius);
     if (distanceSquared(point, player) < clearance ** 2) continue;
     let clear = true;
     for (const enemy of enemies) {
-      if (distanceSquared(point, enemy) < (COMBAT.enemyRadius * 2) ** 2) {
+      if (distanceSquared(point, enemy) < (enemyRadius + (enemy.radius ?? COMBAT.enemyRadius)) ** 2) {
         clear = false;
         break;
       }
@@ -146,24 +137,17 @@ export function spawnPoint(
   return undefined;
 }
 
-export class RunState {
-  health: number;
+export class RunState extends CombatActor {
   kills = 0;
   tick = 0;
-  protectedUntilTick = 0;
-
-  constructor(readonly maxHealth = COMBAT.maxHealth) {
-    this.health = maxHealth;
+  constructor(stats: number | Readonly<ActorStats> = COMBAT.maxHealth) {
+    super({ kind: 'player', id: 0 }, typeof stats === 'number' ? createPlayerStats({ maxHealth: stats }) : stats, COMBAT.playerRadius);
   }
 
-  heal(amount: number): void {
-    if (this.health <= 0 || this.health >= this.maxHealth) return;
-    this.health += Math.min(Math.max(0, amount), this.maxHealth - this.health);
-  }
-
-  takeContactDamage(): boolean {
-    if (this.health === 0 || this.tick < this.protectedUntilTick) return false;
-    this.health = Math.max(0, this.health - 1);
+  takeContactDamage(amount = 1): boolean {
+    const result = resolveDamage(this, { damage: amount }, this.tick);
+    if (result.damage === 0) return false;
+    this.health = result.healthAfter;
     this.protectedUntilTick = this.tick + COMBAT.damageCooldownTicks;
     return true;
   }

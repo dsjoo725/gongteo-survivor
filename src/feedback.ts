@@ -1,68 +1,107 @@
 import Phaser from 'phaser';
-import { COMBAT, type Point } from './rules';
+import type { Point } from './rules';
 
 type Image = Phaser.Physics.Arcade.Image;
-type EnemyFlash = { position: Point; ageMs: number };
+type EnemyHit = { position: Point; ageMs: number };
+type EnemyDeath = {
+  position: Point;
+  ageMs: number;
+  radius: number;
+  scale: number;
+  visualScale: number;
+  bob: number;
+  visual: Phaser.GameObjects.Image;
+};
+
+const HIT_DURATION_MS = 80;
+const DEATH_DURATION_MS = 100;
+const PLAYER_HIT_DURATION_MS = 120;
 
 export class HitFeedback {
-  private readonly enemyFlashes = new Map<number, EnemyFlash>();
-  private playerFlashAgeMs = Infinity;
-  private graphics?: Phaser.GameObjects.Graphics;
+  reducedEffects = false;
+  private readonly enemyHits = new Map<number, EnemyHit>();
+  private readonly enemyDeaths = new Map<number, EnemyDeath>();
+  private playerHitAgeMs = Infinity;
 
   constructor(private readonly scene: Phaser.Scene) {}
 
   enemyHit(id: number, position: Point): void {
-    this.enemyFlashes.set(id, { position: { ...position }, ageMs: 0 });
+    // Actual recoil belongs to the fixed simulation, never the rendering clock.
+    this.enemyHits.set(id, { position: { ...position }, ageMs: 0 });
+  }
+
+  enemyDeath(id: number, enemy: Image, source: Phaser.GameObjects.Image = enemy): void {
+    this.enemyHits.delete(id);
+    this.enemyDeaths.get(id)?.visual.destroy();
+    // This short-lived visual has no physics body and cannot mark a pooled enemy.
+    const position = { x: enemy.body!.center.x, y: enemy.body!.center.y };
+    const bob = Math.abs(source.angle / 2);
+    const visual = this.scene.add.image(position.x, position.y - bob, source.texture.key, source.frame.name)
+      .setOrigin(source.originX, source.originY).setScale(source.scaleX).setDepth(source.depth)
+      .setFlipX(source.flipX).setAngle(source.angle);
+    this.enemyDeaths.set(id, { position, ageMs: 0, radius: enemy.body!.halfWidth,
+      scale: enemy.scaleX, visualScale: source.scaleX, bob, visual });
   }
 
   playerHit(): void {
-    this.playerFlashAgeMs = 0;
+    this.playerHitAgeMs = 0;
   }
 
   advance(deltaMs: number): void {
     const elapsedMs = Number.isFinite(deltaMs) && deltaMs > 0 ? Math.min(deltaMs, 250) : 0;
-    this.playerFlashAgeMs += elapsedMs;
-    for (const [id, flash] of this.enemyFlashes) {
-      flash.ageMs += elapsedMs;
-      if (flash.ageMs >= 60) this.enemyFlashes.delete(id);
+    this.playerHitAgeMs += elapsedMs;
+    for (const [id, hit] of this.enemyHits) {
+      hit.ageMs += elapsedMs;
+      if (hit.ageMs >= HIT_DURATION_MS) this.enemyHits.delete(id);
+    }
+    for (const [id, death] of this.enemyDeaths) {
+      death.ageMs += elapsedMs;
+      if (death.ageMs >= DEATH_DURATION_MS) {
+        death.visual.destroy();
+        this.enemyDeaths.delete(id);
+      }
     }
   }
 
-  render(player: Image, enemies: Iterable<[Image, { id: number }]>): void {
+  render(player: Image): void {
     player.clearTint();
-    if (this.playerFlashAgeMs < 120) {
-      player.setTint(0xff8a78).setTintMode(Phaser.TintModes.FILL);
+    if (this.playerHitAgeMs < PLAYER_HIT_DURATION_MS) {
+      // Multiply only darkens the existing blue; no white or red flash.
+      player.setTint(this.reducedEffects ? 0xd9dfe2 : 0x9daeb5).setTintMode(Phaser.TintModes.MULTIPLY);
     }
-
-    const living = new Set<number>();
-    for (const [enemy, { id }] of enemies) {
-      living.add(id);
-      enemy.clearTint();
-      if (this.enemyFlashes.has(id)) {
-        enemy.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
-      }
-    }
-
-    this.graphics?.clear();
-    for (const [id, { position }] of this.enemyFlashes) {
-      if (living.has(id)) continue;
-      // A killed enemy's brief flash uses a position copy, never its pooled body.
-      const graphics = this.graphics ??= this.scene.add.graphics().setDepth(3.5);
-      graphics.fillStyle(0xffffff).fillCircle(position.x, position.y, COMBAT.enemyRadius);
+    for (const { visual, visualScale, ageMs } of this.enemyDeaths.values()) {
+      const progress = ageMs / DEATH_DURATION_MS;
+      visual.setScale(this.reducedEffects ? visualScale : visualScale * (1 - progress));
+      visual.setAlpha(this.reducedEffects ? 1 - progress : 1);
     }
   }
 
   snapshot() {
     return {
-      enemyFlashes: Array.from(this.enemyFlashes, ([id, { position, ageMs }]) => ({ id, ...position, ageMs })),
-      playerFlashing: this.playerFlashAgeMs < 120,
+      enemyHits: Array.from(this.enemyHits, ([id, { position, ageMs }]) => ({ id, ...position, ageMs })),
+      enemyDeaths: Array.from(this.enemyDeaths, ([id, { position, ageMs, radius, scale, visualScale, visual }]) => ({
+        id, ...position, ageMs, radius, texture: visual.texture.key, scale: scale * visual.scaleX / visualScale, alpha: visual.alpha,
+      })),
+      playerHitActive: this.playerHitAgeMs < PLAYER_HIT_DURATION_MS,
     };
   }
 
+  resize(previous: { width: number; height: number }, next: { width: number; height: number }): void {
+    const reposition = (position: Point) => {
+      position.x *= next.width / previous.width;
+      position.y *= next.height / previous.height;
+    };
+    for (const hit of this.enemyHits.values()) reposition(hit.position);
+    for (const death of this.enemyDeaths.values()) {
+      reposition(death.position);
+      death.visual.setPosition(death.position.x, death.position.y - death.bob);
+    }
+  }
+
   dispose(): void {
-    this.enemyFlashes.clear();
-    this.graphics?.destroy();
-    this.graphics = undefined;
-    this.playerFlashAgeMs = Infinity;
+    this.enemyHits.clear();
+    for (const death of this.enemyDeaths.values()) death.visual.destroy();
+    this.enemyDeaths.clear();
+    this.playerHitAgeMs = Infinity;
   }
 }

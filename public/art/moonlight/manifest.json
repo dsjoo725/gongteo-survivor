@@ -1,0 +1,105 @@
+{
+  "generatedWith": "Built-in image_gen (not CLI)",
+  "reference": "design/dream-concept/assets/moonlight-combat-revised.png",
+  "originalReference": "design/dream-concept/explorations/03-moonlight.png",
+  "prompts": [
+    {
+      "key": "background",
+      "transparent_background": false,
+      "prompt": "Edit the reference into a production playable mobile survivor game BACKGROUND ONLY. Preserve the soft hand painted gouache teal moonlit clearing style, muted mint ground, creamy moonlight, slightly uncanny cute dream mood. REMOVE ALL people, creatures, monsters, attacks, projectiles, rings, diamonds, particles, danger marks, HUD, text, numbers and controls. Also REMOVE the large chair and door from the playable ground. Create a very quiet open unobstructed mint teal clearing occupying the lower 85% with sparse soft brushwork and virtually no small grass details in the central 75%. Only soft dark distant bushes and a small cream moon near the upper horizon at top 15%; foliage may barely frame extreme corners. No structures or obstacles. Top 8% dark quiet teal reserved for live HUD. Flat readable ground for freely moving actors, no strong paths or directional shadows. Portrait 9:16 composition. Background must have no characters, creatures, UI or text."
+    },
+    {
+      "key": "player",
+      "transparent_background": true,
+      "prompt": "Use the reference solely as identity/style reference. Extract and redraw ONLY the small central girl as ONE production game sprite on genuine transparent background. Whole body front three-quarter view, face slightly to right, standing neutral, entire head and feet visible, no cropping. Preserve her specific cute compact proportions: large round head, tiny dot eyes, rosy cheeks, warm brown wavy hair with short side braid, small dusty pink ribbon near temple, mint A-line dress, cream collar, tiny rounded hands and shoes. Match soft flat gouache painting, restrained texture, simple shapes readable at 36px tall. NO large white eyes, eyelashes, realistic rendering, outlines, props, attacks, glow, cast shadow, background, text, UI or extra poses. ONE centered character fills canvas with minimal 5% transparent padding, feet aligned at bottom, suitable for horizontal mirroring. Do not include enemies."
+    },
+    {
+      "key": "enemy",
+      "transparent_background": true,
+      "prompt": "Use the reference solely as style and creature identity reference. Extract and redraw ONE basic enemy creature as a production game sprite on genuine transparent background: small round soft scalloped soot-like dark forest green blob, two tiny cream dot eyes, tiny friendly uncertain curved mouth, subtle muted mint cheek marks. Match the same hand painted gouache simple flat shapes. Compact rounded symmetrical silhouette, front view, readable at 28px tall. Entire creature visible, centered filling canvas with only 5% transparent padding. No legs, no horns, no scary expression, no particles, NO background, NO cast shadow, no glow, no text, no UI, no other creatures or objects. Keep the dark teal green body clearly separated from transparent edges."
+    }
+  ],
+  "assets": {
+    "background": {
+      "file": "background.png",
+      "size": [
+        941,
+        1672
+      ],
+      "alpha": false
+    },
+    "player": {
+      "file": "player.png",
+      "size": [
+        1217,
+        1293
+      ],
+      "alpha": true,
+      "frame": [
+        344,
+        236,
+        507,
+        807
+      ],
+      "displayHeight": 36,
+      "origin": [
+        0.5,
+        1
+      ]
+    },
+    "enemy": {
+      "file": "enemy.png",
+      "size": [
+        1278,
+        1230
+      ],
+      "alpha": true,
+      "frame": [
+        178,
+        205,
+        918,
+        865
+      ],
+      "displayHeight": 28,
+      "origin": [
+        0.5,
+        1
+      ]
+    },
+    "title": {
+      "file": "title.png",
+      "reusedFrom": "design/dream-concept/assets/moonlight-title.png"
+    },
+    "rosePaint": {
+      "file": "rose-paint.png",
+      "reusedFrom": "design/dream-concept/assets/rose-paint.png"
+    },
+    "upgradeShards": {
+      "file": "upgrade-shards.png",
+      "reusedFrom": "design/dream-concept/growth-preview/dream-shards.png",
+      "size": [2172, 724],
+      "alpha": true,
+      "columns": ["attackDamage", "moveSpeed", "critMultiplier"],
+      "promptRecord": "design/dream-concept/growth-preview/REHEARSAL.md"
+    },
+    "upgradeShardsExtra": {
+      "file": "upgrade-shards-extra.png",
+      "reference": "design/dream-concept/growth-preview/dream-shards.png",
+      "size": [2172, 724],
+      "alpha": true,
+      "columns": ["attackSpeed", "critChance", "maxHealth", "size", "lifesteal"],
+      "prompt": "Produce ONE production game UI sprite atlas on true transparent background in an extremely wide horizontal 5:1 composition. Reference is ONLY the cozy gouache texture, soft edges, muted teal, cream, amber and coral palette, no copying those objects. Exactly FIVE separate cute large objects in a single perfectly aligned row with equal spacing and empty gutters, each centered in its own fifth (10%,30%,50%,70%,90% of width). Left to right: (1) a small wooden hourglass containing golden sand for attack speed, (2) a round wooden bullseye disk with three muted teal/cream concentric rings and a central dot for critical chance, (3) a rose-colored soft stuffed heart with cream highlight for maximum health, (4) a tiny mint-capped button mushroom with cream stem for reduced body size, (5) a coral red dew drop with a tiny teal leaf for lifesteal. Silhouettes strong and distinct. All objects use the same simple softly painted gouache style as attached art, front or mild three-quarter view. Fill about 65% of each cell horizontally with breathing room, no overlap, no floor shadows, no words or labels, no background, no card surfaces, no extra objects. Keep it readable on a cream card at 50px."
+    }
+  },
+  "fonts": {
+    "Jua": {
+      "source": "https://github.com/google/fonts/tree/main/ofl/jua",
+      "license": "../../fonts/Jua-OFL.txt"
+    },
+    "Pretendard": {
+      "version": "1.3.9",
+      "source": "https://github.com/orioncactus/pretendard/tree/v1.3.9",
+      "license": "../../fonts/Pretendard-LICENSE.txt"
+    }
+  }
+}

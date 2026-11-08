@@ -1,0 +1,57 @@
+{
+  "checks": [
+    {
+      "check": "desktop overflow",
+      "passed": true
+    },
+    {
+      "check": "title to combat",
+      "passed": true
+    },
+    {
+      "check": "combat to pause",
+      "passed": true
+    },
+    {
+      "check": "stats preview",
+      "passed": true
+    },
+    {
+      "check": "Escape returns to menu",
+      "passed": true
+    },
+    {
+      "check": "setting toggle",
+      "passed": true
+    },
+    {
+      "check": "Escape pauses combat",
+      "passed": true
+    },
+    {
+      "check": "restart returns to title",
+      "passed": true
+    },
+    {
+      "check": "focus restored",
+      "passed": true
+    },
+    {
+      "check": "390px overflow",
+      "passed": true
+    },
+    {
+      "check": "320px overflow",
+      "passed": true
+    },
+    {
+      "check": "reduced motion complete pause",
+      "passed": true
+    },
+    {
+      "check": "no runtime errors",
+      "passed": true
+    }
+  ],
+  "errors": []
+}
